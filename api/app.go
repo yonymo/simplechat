@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/yonymo/simplechat/api/config"
 	"log"
 	"net/http"
 )
@@ -32,7 +33,8 @@ func NewAPP(port int) *APP {
 		Handler: app.Engine,
 	}
 
-	initRouter(app.Engine)
+	cfg := config.NewConfig()
+	initRouter(app.Engine, cfg)
 
 	return app
 }
