@@ -1,7 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/yonymo/simplechat/api"
+)
 
 func main() {
 	fmt.Println("hello world")
+
+	api.NewAPP(8080).Run()
+
+	return
 }
