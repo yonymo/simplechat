@@ -16,11 +16,11 @@ type BaseModel struct {
 
 type UserDO struct {
 	BaseModel
-	Mobile   string `json:"mobile" gorm:"uniqueIndex,type:varchar(11)"`
+	Mobile   string `json:"mobile" gorm:"uniqueIndex;type:varchar(11)"`
 	Passwd   string `json:"passwd" gorm:"type:varchar(100);not null"`
 	Nickname string `json:"nickname" gorm:"type:varchar(50)"`
 	Avatar   string `json:"avatar" gorm:"type:varchar(150)"`
-	Gender   string `json:"gender" gorm:"type:varchar(6),default:male, comment:'male or female'"`
+	Gender   string `json:"gender" gorm:"type:varchar(6);default:male;comment:'male or female'"`
 	Online   int    `json:"online" gorm:"type:tinyint"`
 	Token    string `json:"token" gorm:"type:varchar(40)"`
 	Memo     string `json:"memo" gorm:"type:varchar(140)"`

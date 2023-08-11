@@ -2,12 +2,17 @@ package user
 
 import (
 	"context"
+	"github.com/dgrijalva/jwt-go"
 	du "github.com/yonymo/simplechat/api/internal/data/user/v1"
 	"github.com/yonymo/simplechat/pkg/common"
+	mjwt "github.com/yonymo/simplechat/pkg/middleware/jwt"
+	"github.com/yonymo/simplechat/pkg/options"
+	"time"
 )
 
 type UserDTO struct {
 	*du.UserDO
+	Expire int64
 }
 
 type UserDTOList struct {
@@ -17,7 +22,7 @@ type UserDTOList struct {
 
 type IUserSrv interface {
 	MobileLogin(ctx context.Context, mobile, password string) (*UserDTO, error)
-	Register(ctx context.Context, mobile, password, codes string) (*UserDTO, error)
+	Register(ctx context.Context, mobile, password string) (*UserDTO, error)
 	Update(ctx context.Context, dto *UserDTO) error
 	Get(ctx context.Context, userId uint) (*UserDTO, error)
 	GetByMobile(ctx context.Context, mobile string) (*UserDTO, error)
@@ -26,6 +31,7 @@ type IUserSrv interface {
 
 type userService struct {
 	userData du.IUserData
+	jwtOps   *options.JwtOptions
 }
 
 func (u *userService) MobileLogin(ctx context.Context, mobile, password string) (*UserDTO, error) {
@@ -33,9 +39,35 @@ func (u *userService) MobileLogin(ctx context.Context, mobile, password string) 
 	panic("implement me")
 }
 
-func (u *userService) Register(ctx context.Context, mobile, password, codes string) (*UserDTO, error) {
-	//TODO implement me
-	panic("implement me")
+func (u *userService) Register(ctx context.Context, mobile, password string) (*UserDTO, error) {
+	udo := &du.UserDO{
+		Mobile:   mobile,
+		Passwd:   password,
+		Nickname: mobile,
+	}
+	err := u.userData.Create(ctx, udo)
+	if err != nil {
+		return nil, err
+	}
+
+	jwtObj := mjwt.NewJWT(u.jwtOps.Key)
+	tNow := time.Now().Unix()
+	expire := time.Now().Add(u.jwtOps.Timeout).Local().Unix()
+	claims := mjwt.CustomClaims{
+		ID:          udo.ID,
+		NickName:    mobile,
+		AuthorityId: udo.ID,
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    u.jwtOps.Realm,
+			NotBefore: tNow,
+			ExpiresAt: expire,
+		},
+	}
+	udo.Token, err = jwtObj.CreateToken(claims)
+	if err != nil {
+		return nil, err
+	}
+	return &UserDTO{UserDO: udo, Expire: expire}, nil
 }
 
 func (u *userService) Get(ctx context.Context, userId uint) (*UserDTO, error) {
@@ -44,7 +76,7 @@ func (u *userService) Get(ctx context.Context, userId uint) (*UserDTO, error) {
 		return nil, err
 	}
 
-	return &UserDTO{do}, nil
+	return &UserDTO{UserDO: do}, nil
 }
 
 func (u *userService) CheckPassword(ctx context.Context, password, EncryptedPassword string) (bool, error) {
@@ -59,7 +91,7 @@ func (u *userService) List(ctx context.Context, opts common.ListMeta, orderby []
 	}
 	dtoList := &UserDTOList{Total: udl.Total}
 	for _, val := range udl.Items {
-		dtoList.Items = append(dtoList.Items, &UserDTO{val})
+		dtoList.Items = append(dtoList.Items, &UserDTO{UserDO: val})
 	}
 	return dtoList, nil
 }
@@ -74,11 +106,11 @@ func (u *userService) GetByMobile(ctx context.Context, mobile string) (*UserDTO,
 		return nil, err
 	}
 
-	return &UserDTO{do}, nil
+	return &UserDTO{UserDO: do}, nil
 }
 
 var _ IUserSrv = &userService{}
 
-func NewUserSrv(iu du.IUserData) IUserSrv {
-	return &userService{iu}
+func NewUserSrv(iu du.IUserData, jwtOps *options.JwtOptions) IUserSrv {
+	return &userService{userData: iu, jwtOps: jwtOps}
 }

@@ -8,7 +8,7 @@ import (
 func main() {
 	fmt.Println("hello world")
 
-	api.NewAPP(8080).Run()
+	api.NewAPP("api").Run()
 
 	return
 }

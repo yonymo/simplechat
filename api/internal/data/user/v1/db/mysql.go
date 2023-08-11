@@ -41,8 +41,8 @@ func GetDBInstance(opts *options.MySQLOptions) (*gorm.DB, error) {
 			panic(err)
 		}
 	})
-	if db == nil {
-		return nil, errors.New("mysql db is nil")
+	if err != nil {
+		return nil, errors.New("mysql db open failed")
 	}
 	return db, nil
 
