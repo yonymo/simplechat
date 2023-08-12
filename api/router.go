@@ -4,9 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/yonymo/simplechat/api/config"
-	"github.com/yonymo/simplechat/api/internal/data/user/v1/db"
+	fdb "github.com/yonymo/simplechat/api/internal/data/friend/v1/db"
+	udb "github.com/yonymo/simplechat/api/internal/data/user/v1/db"
 	"github.com/yonymo/simplechat/api/internal/service"
+	"github.com/yonymo/simplechat/pkg/common/db"
 
+	"github.com/yonymo/simplechat/api/internal/controller/friend/v1"
 	"github.com/yonymo/simplechat/api/internal/controller/user/v1"
 )
 
@@ -16,11 +19,19 @@ func initRouter(s *gin.Engine, cfg *config.Config, trans ut.Translator) {
 		panic(err)
 	}
 	v1 := s.Group("/v1")
+
+	userData := udb.NewUserData(dbins)
+	friendData := fdb.NewFriendData(dbins)
+	srvParam := &service.FactoryParam{
+		UserData:   userData,
+		JwtOps:     cfg.Jwt,
+		FriendData: friendData,
+	}
+	srvFact := service.NewSrvFactory(srvParam)
+
 	ugroup := v1.Group("/user")
-	userData := db.NewUserData(dbins)
-	srvFact := service.NewSrvFactory(userData, cfg.Jwt)
-	userServer := user.NewUserControl(srvFact, trans)
 	{
+		userServer := user.NewUserControl(srvFact, trans)
 		ugroup.POST("/login", userServer.Login)
 		ugroup.POST("/register", userServer.Register)
 	}
@@ -28,5 +39,11 @@ func initRouter(s *gin.Engine, cfg *config.Config, trans ut.Translator) {
 	baseGroup := v1.Group("/base")
 	{
 		baseGroup.GET("/captcha", user.GetCaptcha)
+	}
+
+	friendGroup := v1.Group("/friend")
+	{
+		friendServer := friend.NewFriendControl(srvFact)
+		friendGroup.POST("/add_friend", friendServer.AddFriend)
 	}
 }

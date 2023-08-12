@@ -3,8 +3,9 @@ package user
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"log"
-	"net/http"
+	"github.com/yonymo/simplechat/pkg/code"
+	gin2 "github.com/yonymo/simplechat/pkg/common/gin"
+	"github.com/yonymo/simplechat/pkg/errors"
 )
 
 type PassWordLoginForm struct {
@@ -18,13 +19,26 @@ func (u *userServer) Login(ctx *gin.Context) {
 	fmt.Println("Login is called")
 	pwdForm := &PassWordLoginForm{}
 	if err := ctx.ShouldBind(pwdForm); err != nil {
-		ctx.JSON(http.StatusBadRequest, "参数错误")
+		gin2.HandleValidatorError(ctx, err, u.trans)
 		return
 	}
-	userDTO, err := u.srv.UserSrv().GetByMobile(ctx, pwdForm.Mobile)
+
+	if ok := store.Verify(pwdForm.CaptchaId, pwdForm.Captcha, true); !ok {
+		gin2.WriteResponse(ctx, errors.WithCode(code.ErrCodeIncorrect, "验证码错误"), nil)
+		return
+	}
+
+	userDTO, err := u.srv.UserSrv().MobileLogin(ctx, pwdForm.Mobile, pwdForm.PassWord)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, "用户未注册")
+		gin2.WriteResponse(ctx, err, nil)
 		return
 	}
-	log.Println(userDTO)
+
+	gin2.WriteResponse(ctx, nil, gin.H{
+		"id":       userDTO.ID,
+		"nickname": userDTO.Nickname,
+		"token":    userDTO.Token,
+		"expire":   userDTO.Expire,
+	})
+
 }

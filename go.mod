@@ -3,6 +3,7 @@ module github.com/yonymo/simplechat
 go 1.19
 
 require (
+	github.com/anaskhan96/go-password-encoder v0.0.0-20201010210601-c765b799fd72
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fatih/color v1.15.0
@@ -13,6 +14,7 @@ require (
 	github.com/gosuri/uitable v0.0.4
 	github.com/moby/term v0.5.0
 	github.com/mojocn/base64Captcha v1.3.5
+	github.com/novalagung/gubrak v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
