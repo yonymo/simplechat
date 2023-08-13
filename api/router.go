@@ -41,9 +41,13 @@ func initRouter(s *gin.Engine, cfg *config.Config, trans ut.Translator) {
 		baseGroup.GET("/captcha", user.GetCaptcha)
 	}
 
+	jwtAuth := newJWTAuth(cfg.Jwt)
+
 	friendGroup := v1.Group("/friend")
 	{
+		friendGroup.Use(jwtAuth.AuthFunc())
 		friendServer := friend.NewFriendControl(srvFact)
 		friendGroup.POST("/add_friend", friendServer.AddFriend)
+		friendGroup.GET("/list", friendServer.List)
 	}
 }

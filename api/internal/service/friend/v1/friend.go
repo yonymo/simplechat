@@ -4,6 +4,7 @@ import (
 	"context"
 	df "github.com/yonymo/simplechat/api/internal/data/friend/v1"
 	"github.com/yonymo/simplechat/pkg/code"
+	"github.com/yonymo/simplechat/pkg/common"
 	"github.com/yonymo/simplechat/pkg/errors"
 	"github.com/yonymo/simplechat/pkg/log"
 )
@@ -19,16 +20,6 @@ type FriendDTO struct {
 type FriendDTOList struct {
 	Total int64        `json:"total"`
 	Items []*FriendDTO `json:"items"`
-}
-
-type IFriendSrv interface {
-	AddFriend(ctx context.Context, dto *FriendDTO) error
-	GetFriendList(ctx context.Context, owner uint) (*FriendDTOList, error)
-	GetFriend(ctx context.Context, owner, dst uint) (*FriendDTO, error)
-}
-
-type friendService struct {
-	friendData df.IFriendData
 }
 
 func (f *friendService) GetFriend(ctx context.Context, owner, dst uint) (*FriendDTO, error) {
@@ -90,13 +81,24 @@ func (f *friendService) AddFriend(ctx context.Context, dto *FriendDTO) error {
 	return nil
 }
 
-func (f *friendService) GetFriendList(ctx context.Context, owner uint) (*FriendDTOList, error) {
-	//TODO implement me
-	panic("implement me")
-}
+func (f *friendService) GetFriendList(ctx context.Context, owner uint, meta common.ListMeta) (*FriendDTOList, error) {
+	doList, err := f.friendData.List(ctx, owner, meta)
+	if err != nil {
+		log.Debugf("GetFriendList failed: %v", err)
+		return nil, errors.WithCode(code.ErrServerInternal, "好友列表失败")
+	}
+	dtoList := &FriendDTOList{
+		Total: doList.Total,
+	}
 
-var _ IFriendSrv = &friendService{}
-
-func NewFriendSrv(ifd df.IFriendData) IFriendSrv {
-	return &friendService{friendData: ifd}
+	for _, item := range doList.Items {
+		dtoList.Items = append(dtoList.Items, &FriendDTO{
+			OwnerID:   item.OwnerID,
+			FriendID:  item.FriendID,
+			Remark:    item.Remark,
+			AddSource: item.AddSource,
+			Extra:     item.Extra,
+		})
+	}
+	return dtoList, nil
 }

@@ -17,6 +17,7 @@ const (
 type AddFriendForm struct {
 	//Type     int    `form:"type" json:"type" binding:"required,min=0,max=1"`
 	*friend.FriendDTO
+	ReqText string `json:"req_text,omitempty"`
 }
 
 func (f *friendServer) AddFriend(ctx *gin.Context) {
@@ -43,7 +44,19 @@ func (f *friendServer) AddFriend(ctx *gin.Context) {
 			return
 		}
 	} else {
-		// TODO: 验证好友申请
+		// 添加验证好友申请
+		err = f.srv.FriendSrv().AddFriendReq(ctx, &friend.FriendReqDTO{
+			OwnerID:   addForm.OwnerID,
+			FriendID:  addForm.FriendID,
+			Remark:    addForm.Remark,
+			AddSource: addForm.AddSource,
+			ReqText:   addForm.ReqText,
+			Extra:     addForm.Extra,
+		})
+		if err != nil {
+			gin2.WriteResponse(ctx, err, nil)
+			return
+		}
 	}
 
 	gin2.WriteResponse(ctx, nil, gin.H{})

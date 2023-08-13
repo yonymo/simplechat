@@ -2,7 +2,10 @@ package user
 
 import (
 	"context"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
+
+	//"github.com/dgrijalva/jwt-go"
+
 	"github.com/yonymo/simplechat/pkg/code"
 	"github.com/yonymo/simplechat/pkg/common/pwd"
 	"github.com/yonymo/simplechat/pkg/errors"
@@ -49,24 +52,29 @@ func (u *userService) MobileLogin(ctx context.Context, mobile, password string) 
 		return nil, errors.WithCode(code.ErrUserPasswordIncorrect, "密码错误")
 	}
 	jwtObj := mjwt.NewJWT(u.jwtOps.Key)
-	tNow := time.Now().Unix()
-	expire := time.Now().Add(u.jwtOps.Timeout).Local().Unix()
+	tNow := time.Now()
+	expire := time.Now().Add(u.jwtOps.Timeout).Local()
 	claims := mjwt.CustomClaims{
 		ID:          userDTO.ID,
 		NickName:    userDTO.Nickname,
 		AuthorityId: userDTO.ID,
-		StandardClaims: jwt.StandardClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    u.jwtOps.Realm,
-			NotBefore: tNow,
-			ExpiresAt: expire,
+			Subject:   "chat",
+			ID:        "1",
+			Audience:  []string{"chat"},
+			NotBefore: jwt.NewNumericDate(tNow),
+			ExpiresAt: jwt.NewNumericDate(expire),
+			IssuedAt:  jwt.NewNumericDate(tNow),
 		},
 	}
+
 	userDTO.Token, err = jwtObj.CreateToken(claims)
 	if err != nil {
 		log.Debugf("user token create failed: %v claims: %v\n", err, claims)
 		return nil, errors.WithCode(code.ErrTokenCreate, "token create failed")
 	}
-	userDTO.Expire = expire
+	userDTO.Expire = expire.Unix()
 	return userDTO, nil
 }
 
@@ -86,23 +94,28 @@ func (u *userService) Register(ctx context.Context, mobile, passwd string) (*Use
 	}
 
 	jwtObj := mjwt.NewJWT(u.jwtOps.Key)
-	tNow := time.Now().Unix()
-	expire := time.Now().Add(u.jwtOps.Timeout).Local().Unix()
+	tNow := time.Now()
+	expire := time.Now().Add(u.jwtOps.Timeout).Local()
 	claims := mjwt.CustomClaims{
 		ID:          udo.ID,
 		NickName:    mobile,
 		AuthorityId: udo.ID,
-		StandardClaims: jwt.StandardClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    u.jwtOps.Realm,
-			NotBefore: tNow,
-			ExpiresAt: expire,
+			Subject:   "chat",
+			ID:        "1",
+			Audience:  []string{"chat"},
+			NotBefore: jwt.NewNumericDate(tNow),
+			ExpiresAt: jwt.NewNumericDate(expire),
+			IssuedAt:  jwt.NewNumericDate(tNow),
 		},
 	}
+
 	udo.Token, err = jwtObj.CreateToken(claims)
 	if err != nil {
 		return nil, err
 	}
-	return &UserDTO{UserDO: udo, Expire: expire}, nil
+	return &UserDTO{UserDO: udo, Expire: expire.Unix()}, nil
 }
 
 func (u *userService) Get(ctx context.Context, userId uint) (*UserDTO, error) {
