@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/yonymo/simplechat/api/config"
+	"github.com/yonymo/simplechat/api/internal/controller/msg/v1"
 	fdb "github.com/yonymo/simplechat/api/internal/data/friend/v1/db"
 	udb "github.com/yonymo/simplechat/api/internal/data/user/v1/db"
 	"github.com/yonymo/simplechat/api/internal/service"
@@ -49,5 +50,11 @@ func initRouter(s *gin.Engine, cfg *config.Config, trans ut.Translator) {
 		friendServer := friend.NewFriendControl(srvFact)
 		friendGroup.POST("/add_friend", friendServer.AddFriend)
 		friendGroup.GET("/list", friendServer.List)
+	}
+
+	msgGroup := v1.Group("/msg")
+	{
+		msgGroup.Use(jwtAuth.AuthFunc())
+		msgGroup.GET("", msg.Open)
 	}
 }
